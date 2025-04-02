@@ -10,6 +10,7 @@ import base64
 import json
 import io
 import uuid
+import sys  # Necesario para el manejo de pillow_heif y pyheif
 from flask import Flask, request, jsonify, render_template, redirect, url_for, flash, send_from_directory
 from werkzeug.utils import secure_filename
 from PIL import Image
@@ -25,7 +26,8 @@ IMG_WIDTH = 224
 HOST = '0.0.0.0'  # Escucha en todas las interfaces
 PORT = int(os.environ.get('PORT', 5000))
 UPLOAD_FOLDER = 'temp_uploads'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+# Actualizamos la lista de extensiones permitidas para incluir HEIC/HEIF
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'heic', 'heif'}
 
 # Creamos la aplicación Flask
 app = Flask(__name__)
@@ -91,6 +93,59 @@ def get_model_info():
         'summary': summary_data
     }
 
+def process_heic_image(filepath):
+    """
+    Procesa una imagen HEIC y la convierte a JPG
+    
+    Args:
+        filepath: Ruta al archivo HEIC
+        
+    Returns:
+        Ruta al archivo JPG convertido y la imagen PIL
+    """
+    try:
+        # Intentamos importar pillow_heif primero
+        try:
+            import pillow_heif
+            pillow_heif.register_heif_opener()
+            
+            # Al registrar el opener, PIL puede abrir archivos HEIC directamente
+            img = Image.open(filepath).convert('RGB')
+            
+            # También guardamos una versión JPG por compatibilidad
+            jpg_filepath = os.path.splitext(filepath)[0] + ".jpg"
+            img.save(jpg_filepath, "JPEG")
+            return jpg_filepath, img
+            
+        except ImportError:
+            # Si no está disponible pillow_heif, intentamos con pyheif
+            try:
+                import pyheif
+                
+                # Abrimos el archivo HEIC
+                heif_file = pyheif.read(filepath)
+                
+                # Convertimos a PIL Image
+                img = Image.frombytes(
+                    heif_file.mode, 
+                    heif_file.size, 
+                    heif_file.data,
+                    "raw", 
+                    heif_file.mode, 
+                    heif_file.stride,
+                )
+                
+                # Guardamos como JPG
+                jpg_filepath = os.path.splitext(filepath)[0] + ".jpg"
+                img.save(jpg_filepath, "JPEG")
+                return jpg_filepath, img
+                
+            except ImportError:
+                # Si ninguna librería está disponible
+                raise ImportError('No se puede procesar HEIC. Instale pillow_heif o pyheif')
+    except Exception as e:
+        raise Exception(f'Error al convertir imagen HEIC: {str(e)}')
+
 # ======================================================================
 # ENDPOINTS API (para aplicación móvil)
 # ======================================================================
@@ -127,7 +182,37 @@ def predict():
             
             # Convertimos de base64 a bytes
             image_bytes = base64.b64decode(image_data)
-            img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
+            
+            # Guardamos temporalmente para detectar si es HEIC
+            temp_filepath = os.path.join(UPLOAD_FOLDER, f"temp_{uuid.uuid4()}.bin")
+            with open(temp_filepath, 'wb') as f:
+                f.write(image_bytes)
+            
+            # Verificamos si es HEIC por los primeros bytes (signature)
+            is_heic = False
+            with open(temp_filepath, 'rb') as f:
+                header = f.read(12)
+                # Verificamos si tiene los bytes característicos de HEIC/HEIF
+                if b'ftyp' in header and (b'heic' in header or b'heif' in header or b'mif1' in header):
+                    is_heic = True
+            
+            # Procesamos según el tipo de imagen
+            if is_heic:
+                try:
+                    jpg_filepath, img = process_heic_image(temp_filepath)
+                    # Limpiamos el archivo temporal original
+                    if os.path.exists(temp_filepath):
+                        os.remove(temp_filepath)
+                except Exception as e:
+                    # Limpiamos el archivo temporal
+                    if os.path.exists(temp_filepath):
+                        os.remove(temp_filepath)
+                    return jsonify({'status': 'error', 'message': str(e)}), 400
+            else:
+                # Limpiamos el archivo temporal
+                os.remove(temp_filepath)
+                # Procesamos como imagen normal
+                img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
             
         # Caso 2: multipart/form-data - archivo de imagen
         elif 'multipart/form-data' in content_type or request.files:
@@ -138,8 +223,28 @@ def predict():
             if file.filename == '':
                 return jsonify({'status': 'error', 'message': 'No se seleccionó ningún archivo'}), 400
             
-            # Leemos la imagen directamente
-            img = Image.open(file.stream).convert('RGB')
+            # Verificamos si el archivo es HEIC/HEIF
+            is_heic = file.filename.lower().endswith(('.heic', '.heif'))
+            
+            if is_heic:
+                # Guardamos temporalmente el archivo HEIC
+                temp_filepath = os.path.join(UPLOAD_FOLDER, secure_filename(file.filename))
+                file.save(temp_filepath)
+                
+                try:
+                    # Procesamos el archivo HEIC
+                    jpg_filepath, img = process_heic_image(temp_filepath)
+                    # Limpiamos el archivo HEIC original
+                    if os.path.exists(temp_filepath):
+                        os.remove(temp_filepath)
+                except Exception as e:
+                    # Limpiamos el archivo temporal
+                    if os.path.exists(temp_filepath):
+                        os.remove(temp_filepath)
+                    return jsonify({'status': 'error', 'message': str(e)}), 400
+            else:
+                # Procesamos normalmente
+                img = Image.open(file.stream).convert('RGB')
         
         else:
             return jsonify({
@@ -190,6 +295,8 @@ def predict():
         
     except Exception as e:
         print(f"Error en predicción: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/api/classes', methods=['GET'])
@@ -233,9 +340,6 @@ def index():
     model_info = get_model_info()
     return render_template('index.html', info=model_info)
 
-# Actualiza la lista de extensiones permitidas en controller.py
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'heic', 'heif'}
-
 @app.route('/predict', methods=['GET', 'POST'])
 def web_predict():
     """Página para realizar predicciones desde la web"""
@@ -267,52 +371,15 @@ def web_predict():
                 
                 if is_heic:
                     try:
-                        # Intentamos importar pillow_heif
-                        try:
-                            import pillow_heif
-                            pillow_heif.register_heif_opener()
-                            
-                            # Al registrar el opener, PIL puede abrir archivos HEIC directamente
-                            img = Image.open(filepath).convert('RGB')
-                            
-                            # También guardamos una versión JPG por compatibilidad
-                            jpg_filepath = os.path.splitext(filepath)[0] + ".jpg"
-                            img.save(jpg_filepath, "JPEG")
-                            filepath = jpg_filepath  # Usamos el JPG para el resto del proceso
-                            
-                        except ImportError:
-                            # Si no está disponible pillow_heif, intentamos con pyheif
-                            try:
-                                import pyheif
-                                
-                                # Abrimos el archivo HEIC
-                                heif_file = pyheif.read(filepath)
-                                
-                                # Convertimos a PIL Image
-                                img = Image.frombytes(
-                                    heif_file.mode, 
-                                    heif_file.size, 
-                                    heif_file.data,
-                                    "raw", 
-                                    heif_file.mode, 
-                                    heif_file.stride,
-                                )
-                                
-                                # Guardamos como JPG
-                                jpg_filepath = os.path.splitext(filepath)[0] + ".jpg"
-                                img.save(jpg_filepath, "JPEG")
-                                filepath = jpg_filepath  # Usamos el JPG para el resto del proceso
-                                
-                            except ImportError:
-                                # Si ninguna librería está disponible
-                                flash('No se pudo procesar la imagen HEIC. Faltan dependencias.')
-                                return redirect(request.url)
+                        jpg_filepath, img = process_heic_image(filepath)
+                        filepath = jpg_filepath  # Usamos el JPG para el resto del proceso
                     except Exception as e:
-                        flash(f'Error al convertir imagen HEIC: {str(e)}')
+                        flash(str(e))
                         return redirect(request.url)
+                else:
+                    # Abrimos y procesamos la imagen normal
+                    img = Image.open(filepath).convert('RGB')
                 
-                # Abrimos y procesamos la imagen
-                img = Image.open(filepath).convert('RGB')
                 img_resized = img.resize((IMG_WIDTH, IMG_HEIGHT))
                 img_array = np.expand_dims(np.array(img_resized) / 255.0, axis=0)
                 

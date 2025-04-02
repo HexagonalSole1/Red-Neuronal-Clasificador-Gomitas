@@ -284,150 +284,236 @@
 
 {% block extra_js %}
 <script>
-    // Variables globales
-    let stream = null;
-    let cameraFacingMode = 'environment';
-    const loadingIndicator = document.getElementById('loading-indicator');
-    const loadingMessage = document.getElementById('loading-message');
+    // Reemplaza el código de la cámara en el bloque extra_js de predict.html
+
+// Variables globales
+let stream = null;
+let cameraFacingMode = 'environment'; // Comenzar con la cámara trasera
+const loadingIndicator = document.getElementById('loading-indicator');
+const loadingMessage = document.getElementById('loading-message');
+
+// Elementos DOM para la cámara
+const cameraTab = document.getElementById('camera-tab');
+const cameraContainer = document.getElementById('camera-container');
+const cameraVideo = document.getElementById('camera-video');
+const captureBtn = document.getElementById('capture-btn');
+const switchCameraBtn = document.getElementById('switch-camera-btn');
+const retakeBtn = document.getElementById('retake-btn');
+const submitCameraBtn = document.getElementById('submit-camera-btn');
+const captureCanvas = document.getElementById('capture-canvas');
+const capturedImage = document.getElementById('captured-image');
+const capturePreviewContainer = document.getElementById('capture-preview-container');
+const cameraImageData = document.getElementById('camera-image-data');
+const cameraForm = document.getElementById('camera-form');
+const cameraMessage = document.getElementById('camera-message');
+
+// Funciones de utilidad
+function showLoading(message = 'Procesando imagen...') {
+    loadingMessage.textContent = message;
+    loadingIndicator.style.display = 'flex';
+}
+
+function hideLoading() {
+    loadingIndicator.style.display = 'none';
+}
+
+// Inicializar la cámara
+function initCamera() {
+    console.log("Intentando inicializar cámara...");
     
-    // Elementos DOM para la subida de archivos
-    const fileInput = document.getElementById('file');
-    const imagePreview = document.getElementById('image-preview');
-    const dropZone = document.getElementById('drop-zone');
-    const uploadIcon = document.querySelector('.upload-icon');
-    const uploadText = document.querySelector('.upload-text');
-    const previewContainer = document.getElementById('preview-container');
-    const uploadForm = document.getElementById('upload-form');
+    // Mostrar el contenedor de la cámara
+    cameraContainer.style.display = 'block';
     
-    // Elementos DOM para la cámara
-    const cameraTab = document.getElementById('camera-tab');
-    const cameraContainer = document.getElementById('camera-container');
-    const cameraVideo = document.getElementById('camera-video');
-    const captureBtn = document.getElementById('capture-btn');
-    const switchCameraBtn = document.getElementById('switch-camera-btn');
-    const retakeBtn = document.getElementById('retake-btn');
-    const submitCameraBtn = document.getElementById('submit-camera-btn');
-    const captureCanvas = document.getElementById('capture-canvas');
-    const capturedImage = document.getElementById('captured-image');
-    const capturePreviewContainer = document.getElementById('capture-preview-container');
-    const cameraImageData = document.getElementById('camera-image-data');
-    const cameraForm = document.getElementById('camera-form');
-    const cameraMessage = document.getElementById('camera-message');
-    
-    // Funciones de utilidad
-    function showLoading(message = 'Procesando imagen...') {
-        loadingMessage.textContent = message;
-        loadingIndicator.style.display = 'flex';
+    // Limpiar el stream anterior si existe
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
     }
     
-    function hideLoading() {
-        loadingIndicator.style.display = 'none';
+    // Verificar soporte del navegador
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        console.error("Este navegador no soporta la API mediaDevices");
+        cameraMessage.textContent = 'Tu navegador no soporta acceso a la cámara';
+        return;
     }
+
+    // Opciones de configuración de cámara con constraints más flexibles
+    const constraints = {
+        video: {
+            facingMode: cameraFacingMode
+        },
+        audio: false
+    };
     
-    // Inicialización cuando el DOM está cargado
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log("DOM cargado, inicializando funciones...");
-        
-        // Manejo del formulario de subida
-        uploadForm.addEventListener('submit', function() {
-            showLoading('Enviando imagen...');
-            return true;
-        });
-        
-        // Previsualización de imagen al seleccionar archivo
-        fileInput.addEventListener('change', function() {
-            const file = this.files[0];
-            if (!file) return;
+    console.log("Solicitando permisos de cámara con configuración:", constraints);
+    
+    // Acceder a la cámara
+    navigator.mediaDevices.getUserMedia(constraints)
+        .then(function(videoStream) {
+            console.log("Permiso de cámara concedido");
+            stream = videoStream;
+            cameraVideo.srcObject = stream;
             
-            // Para archivos HEIC mostramos un placeholder
-            if (file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
-                imagePreview.style.display = 'none';
-                uploadIcon.style.display = 'block';
-                uploadIcon.className = 'fas fa-file-image upload-icon';
-                uploadText.style.display = 'block';
-                uploadText.textContent = 'Imagen HEIC seleccionada. Se convertirá automáticamente.';
-            } else {
-                // Para otros formatos mostramos la vista previa
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    imagePreview.src = e.target.result;
-                    imagePreview.style.display = 'block';
-                    uploadIcon.style.display = 'none';
-                    uploadText.style.display = 'none';
-                }
-                reader.readAsDataURL(file);
-            }
-        });
-        
-        // Configuración de drag & drop
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            previewContainer.addEventListener(eventName, function(e) { 
-                e.preventDefault(); 
-                e.stopPropagation(); 
-            }, false);
-        });
-        
-        ['dragenter', 'dragover'].forEach(eventName => {
-            previewContainer.addEventListener(eventName, function() {
-                previewContainer.style.borderColor = '#007bff';
-                previewContainer.style.backgroundColor = '#e9f7fe';
-            }, false);
-        });
-        
-        ['dragleave', 'drop'].forEach(eventName => {
-            previewContainer.addEventListener(eventName, function() {
-                previewContainer.style.borderColor = '#ccc';
-                previewContainer.style.backgroundColor = '#f8f9fa';
-            }, false);
-        });
-        
-        previewContainer.addEventListener('drop', function(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
+            // Evento cuando el video está listo para reproducirse
+            cameraVideo.onloadedmetadata = function() {
+                console.log("Video metadata cargada, reproduciendo...");
+                // Usar una promesa para asegurar que el video comience a reproducirse
+                cameraVideo.play()
+                    .then(() => {
+                        console.log("Reproducción iniciada correctamente");
+                        cameraMessage.textContent = 'Enfoca la gomita y toma la foto';
+                    })
+                    .catch(error => {
+                        console.error("Error al iniciar reproducción:", error);
+                        cameraMessage.textContent = 'Error al iniciar la cámara';
+                    });
+            };
             
-            if (files.length) {
-                const file = files[0];
-                fileInput.files = files;
-                
-                // Para archivos HEIC mostramos un placeholder
-                if (file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
-                    imagePreview.style.display = 'none';
-                    uploadIcon.style.display = 'block';
-                    uploadIcon.className = 'fas fa-file-image upload-icon';
-                    uploadText.style.display = 'block';
-                    uploadText.textContent = 'Imagen HEIC seleccionada. Se convertirá automáticamente.';
-                } else {
-                    // Para otros formatos mostramos la vista previa
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        imagePreview.src = e.target.result;
-                        imagePreview.style.display = 'block';
-                        uploadIcon.style.display = 'none';
-                        uploadText.style.display = 'none';
+            // Verificar si hay múltiples cámaras
+            navigator.mediaDevices.enumerateDevices()
+                .then(devices => {
+                    const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                    console.log(`Dispositivos de video detectados: ${videoDevices.length}`);
+                    if (videoDevices.length > 1) {
+                        switchCameraBtn.style.display = 'block';
                     }
-                    reader.readAsDataURL(file);
-                }
+                })
+                .catch(error => {
+                    console.warn("No se pudieron enumerar dispositivos:", error);
+                });
+        })
+        .catch(function(error) {
+            console.error('Error accediendo a la cámara: ', error);
+            if (error.name === 'NotAllowedError') {
+                cameraMessage.textContent = 'Permiso de cámara denegado. Por favor, permite el acceso.';
+            } else if (error.name === 'NotReadableError') {
+                cameraMessage.textContent = 'La cámara está siendo usada por otra aplicación.';
+            } else if (error.name === 'OverconstrainedError') {
+                // Reintentar con constraints más básicos
+                navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+                    .then(function(videoStream) {
+                        stream = videoStream;
+                        cameraVideo.srcObject = stream;
+                        cameraVideo.play();
+                        cameraMessage.textContent = 'Enfoca la gomita y toma la foto';
+                    })
+                    .catch(function(fallbackError) {
+                        cameraMessage.textContent = 'Error al acceder a la cámara: ' + fallbackError.message;
+                    });
+            } else {
+                cameraMessage.textContent = 'Error al acceder a la cámara: ' + error.message;
             }
         });
+}
+
+// Capturar imagen de la cámara
+function captureImage() {
+    console.log("Capturando imagen...");
+    if (!stream) {
+        console.error("No hay stream de cámara activo");
+        cameraMessage.textContent = 'Error: Cámara no disponible. Intenta recargar la página.';
+        return;
+    }
+    
+    // Obtener dimensiones del video
+    const videoWidth = cameraVideo.videoWidth || 640;
+    const videoHeight = cameraVideo.videoHeight || 480;
+    
+    console.log(`Dimensiones del video: ${videoWidth}x${videoHeight}`);
+    
+    // Configurar canvas con el tamaño del video
+    captureCanvas.width = videoWidth;
+    captureCanvas.height = videoHeight;
+    
+    try {
+        // Dibujar el frame actual en el canvas
+        const context = captureCanvas.getContext('2d');
+        context.drawImage(cameraVideo, 0, 0, videoWidth, videoHeight);
         
-        // Hacer clic en la zona para seleccionar archivo
-        dropZone.addEventListener('click', function() {
-            fileInput.click();
+        // Convertir canvas a imagen data URL
+        const imageDataUrl = captureCanvas.toDataURL('image/jpeg', 0.9);
+        
+        // Mostrar imagen capturada
+        capturedImage.src = imageDataUrl;
+        capturePreviewContainer.style.display = 'block';
+        cameraContainer.style.display = 'none';
+        
+        // Guardar data URL en input hidden
+        cameraImageData.value = imageDataUrl;
+        
+        // Mostrar botones de control
+        retakeBtn.style.display = 'block';
+        submitCameraBtn.style.display = 'block';
+        
+        console.log("Imagen capturada correctamente");
+    } catch (error) {
+        console.error("Error al capturar imagen:", error);
+        cameraMessage.textContent = 'Error al capturar la imagen: ' + error.message;
+    }
+}
+
+// Volver a tomar la foto
+function retakePhoto() {
+    console.log("Volviendo a tomar foto...");
+    capturePreviewContainer.style.display = 'none';
+    cameraContainer.style.display = 'block';
+    retakeBtn.style.display = 'none';
+    submitCameraBtn.style.display = 'none';
+    cameraImageData.value = '';
+    
+    // Asegurar que la cámara sigue funcionando
+    if (!stream || stream.getVideoTracks()[0].readyState !== 'live') {
+        console.log("Reiniciando cámara en retake...");
+        initCamera();
+    }
+}
+
+// Cambiar entre cámara frontal y trasera
+function switchCamera() {
+    console.log("Cambiando de cámara...");
+    
+    // Detener el stream actual
+    if (stream) {
+        stream.getTracks().forEach(track => {
+            track.stop();
+            console.log("Track detenido:", track.label);
         });
-        
-        // ===== FUNCIONES DE CÁMARA =====
-        
-        // Cuando se hace clic en la pestaña de cámara
+        stream = null;
+    }
+    
+    // Cambiar modo de cámara
+    cameraFacingMode = cameraFacingMode === 'environment' ? 'user' : 'environment';
+    console.log(`Nuevo modo de cámara: ${cameraFacingMode}`);
+    
+    // Reiniciar cámara con nuevo modo
+    initCamera();
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Eventos para los elementos de cámara
+    if (cameraTab) {
         cameraTab.addEventListener('click', function() {
-            console.log("Tab de cámara clickeado, inicializando cámara...");
-            setTimeout(initCamera, 100); // Pequeño retraso para asegurar que la pestaña esté visible
+            console.log("Tab de cámara clickeado");
+            // Dar tiempo a que la pestaña se active antes de inicializar la cámara
+            setTimeout(initCamera, 300);
         });
-        
+    }
+    
+    if (captureBtn) {
         captureBtn.addEventListener('click', captureImage);
+    }
+    
+    if (retakeBtn) {
         retakeBtn.addEventListener('click', retakePhoto);
+    }
+    
+    if (switchCameraBtn) {
         switchCameraBtn.addEventListener('click', switchCamera);
-        
-        // Capturar envío del formulario de cámara
+    }
+    
+    // Capturar envío del formulario de cámara
+    if (cameraForm) {
         cameraForm.addEventListener('submit', function(e) {
             e.preventDefault();
             
@@ -449,7 +535,7 @@
                     formData.append('file', file);
                     
                     // Enviar el formulario
-                    fetch('{{ url_for("web_predict") }}', {
+                    fetch('/predict', {
                         method: 'POST',
                         body: formData
                     })
@@ -475,170 +561,228 @@
                     });
                 });
         });
-    });
-    
-    // Inicializar la cámara
-    function initCamera() {
-        console.log("Inicializando cámara...");
-        // Mostrar el contenedor de la cámara
-        cameraContainer.style.display = 'block';
-        
-        // Si ya hay un stream activo, no hacer nada
-        if (stream) {
-            console.log("Ya hay un stream activo");
-            return;
-        }
-        
-        // Verificar soporte del navegador
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            console.error("Este navegador no soporta la API mediaDevices");
-            cameraMessage.textContent = 'Tu navegador no soporta acceso a la cámara';
-            return;
-        }
-        
-        // Acceder a la cámara
-        console.log("Solicitando permisos de cámara...");
-        navigator.mediaDevices.getUserMedia({
-            video: { 
-                facingMode: cameraFacingMode,
-                width: { ideal: 1280 },
-                height: { ideal: 720 }
-            },
-            audio: false
-        })
-        .then(function(videoStream) {
-            console.log("Permiso de cámara concedido");
-            stream = videoStream;
-            cameraVideo.srcObject = stream;
-            
-            // Evento cuando el video está listo para reproducirse
-            cameraVideo.onloadedmetadata = function() {
-                console.log("Video metadata cargada, reproduciendo...");
-                cameraVideo.play();
-                cameraMessage.textContent = 'Enfoca la gomita y toma la foto';
-            };
-            
-            // Verificar si hay múltiples cámaras
-            navigator.mediaDevices.enumerateDevices()
-                .then(devices => {
-                    const videoDevices = devices.filter(device => device.kind === 'videoinput');
-                    console.log(`Dispositivos de video detectados: ${videoDevices.length}`);
-                    if (videoDevices.length > 1) {
-                        switchCameraBtn.style.display = 'block';
-                    }
-                });
-        })
-        .catch(function(error) {
-            console.error('Error accediendo a la cámara: ', error);
-            if (error.name === 'NotAllowedError') {
-                cameraMessage.textContent = 'Permiso de cámara denegado';
-            } else {
-                cameraMessage.textContent = 'Error al acceder a la cámara: ' + error.message;
-            }
-        });
-    }
-    
-    // Capturar imagen de la cámara
-    function captureImage() {
-        console.log("Capturando imagen...");
-        if (!stream) {
-            console.error("No hay stream de cámara activo");
-            return;
-        }
-        
-        const videoWidth = cameraVideo.videoWidth;
-        const videoHeight = cameraVideo.videoHeight;
-        
-        console.log(`Dimensiones del video: ${videoWidth}x${videoHeight}`);
-        
-        // Configurar canvas con el tamaño del video
-        captureCanvas.width = videoWidth;
-        captureCanvas.height = videoHeight;
-        
-        // Dibujar el frame actual en el canvas
-        const context = captureCanvas.getContext('2d');
-        context.drawImage(cameraVideo, 0, 0, videoWidth, videoHeight);
-        
-        // Convertir canvas a imagen data URL
-        const imageDataUrl = captureCanvas.toDataURL('image/jpeg', 0.9);
-        
-        // Mostrar imagen capturada
-        capturedImage.src = imageDataUrl;
-        capturePreviewContainer.style.display = 'block';
-        cameraContainer.style.display = 'none';
-        
-        // Guardar data URL en input hidden
-        cameraImageData.value = imageDataUrl;
-        
-        // Mostrar botones de control
-        retakeBtn.style.display = 'block';
-        submitCameraBtn.style.display = 'block';
-        
-        console.log("Imagen capturada correctamente");
-    }
-    
-    // Volver a tomar la foto
-    function retakePhoto() {
-        console.log("Volviendo a tomar foto...");
-        capturePreviewContainer.style.display = 'none';
-        cameraContainer.style.display = 'block';
-        retakeBtn.style.display = 'none';
-        submitCameraBtn.style.display = 'none';
-        cameraImageData.value = '';
-    }
-    
-    // Cambiar entre cámara frontal y trasera
-    function switchCamera() {
-        console.log("Cambiando de cámara...");
-        if (!stream) return;
-        
-        // Detener el stream actual
-        stream.getTracks().forEach(track => {
-            track.stop();
-            console.log("Track detenido:", track.label);
-        });
-        stream = null;
-        
-        // Cambiar modo de cámara
-        cameraFacingMode = cameraFacingMode === 'environment' ? 'user' : 'environment';
-        console.log(`Nuevo modo de cámara: ${cameraFacingMode}`);
-        
-        // Reiniciar cámara con nuevo modo
-        navigator.mediaDevices.getUserMedia({
-            video: { 
-                facingMode: cameraFacingMode,
-                width: { ideal: 1280 },
-                height: { ideal: 720 }
-            },
-            audio: false
-        })
-        .then(function(videoStream) {
-            stream = videoStream;
-            cameraVideo.srcObject = stream;
-            console.log("Cámara cambiada correctamente");
-        })
-        .catch(function(error) {
-            console.error('Error cambiando cámara: ', error);
-            cameraMessage.textContent = 'Error al cambiar de cámara';
-        });
-    }
-    
-    // Limpiar recursos al cambiar de pestaña
-    function cleanupCamera() {
-        console.log("Limpiando recursos de cámara...");
-        if (stream) {
-            stream.getTracks().forEach(track => {
-                track.stop();
-                console.log("Track detenido en cleanup:", track.label);
-            });
-            stream = null;
-        }
     }
     
     // Limpiar cuando se cambia a la pestaña de subida
-    document.querySelector('button[data-bs-target="#upload-content"]').addEventListener('click', cleanupCamera);
+    const uploadTab = document.querySelector('button[data-bs-target="#upload-content"]');
+    if (uploadTab) {
+        uploadTab.addEventListener('click', cleanupCamera);
+    }
+});
+
+// Limpiar recursos al cambiar de pestaña
+function cleanupCamera() {
+    console.log("Limpiando recursos de cámara...");
+    if (stream) {
+        stream.getTracks().forEach(track => {
+            track.stop();
+            console.log("Track detenido en cleanup:", track.label);
+        });
+        stream = null;
+    }
+}
+
+// Limpiar al salir de la página
+window.addEventListener('beforeunload', cleanupCamera);
+
+// Añade este código como un script separado o al final de tu bloque de JavaScript
+// para diagnosticar problemas con la cámara
+
+// Función para mostrar información de diagnóstico
+function diagnoseCameraIssues() {
+    console.log("=== DIAGNÓSTICO DE CÁMARA ===");
     
-    // Limpiar al salir de la página
-    window.addEventListener('beforeunload', cleanupCamera);
+    // Verificar soporte básico del navegador
+    const hasNavigator = typeof navigator !== 'undefined';
+    const hasMediaDevices = hasNavigator && !!navigator.mediaDevices;
+    const hasGetUserMedia = hasMediaDevices && !!navigator.mediaDevices.getUserMedia;
+    
+    console.log("Soporte del navegador:");
+    console.log(`- navigator: ${hasNavigator}`);
+    console.log(`- navigator.mediaDevices: ${hasMediaDevices}`);
+    console.log(`- getUserMedia: ${hasGetUserMedia}`);
+    
+    // Verificar protocolo (HTTPS es requerido en muchos navegadores)
+    const isSecure = window.location.protocol === 'https:' || 
+                     window.location.hostname === 'localhost' || 
+                     window.location.hostname === '127.0.0.1';
+    console.log(`Protocolo seguro (https/localhost): ${isSecure}`);
+    
+    if (!isSecure) {
+        console.warn("⚠️ La API de cámara generalmente requiere HTTPS excepto en localhost");
+    }
+    
+    // Verificar permisos (si es posible)
+    if (navigator.permissions && navigator.permissions.query) {
+        navigator.permissions.query({ name: 'camera' })
+            .then(permissionStatus => {
+                console.log(`Estado de permiso de cámara: ${permissionStatus.state}`);
+                
+                permissionStatus.onchange = function() {
+                    console.log(`Permiso de cámara cambiado a: ${this.state}`);
+                };
+            })
+            .catch(error => {
+                console.log(`No se pudo consultar permiso: ${error}`);
+            });
+    }
+    
+    // Enumerar dispositivos disponibles
+    if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+        navigator.mediaDevices.enumerateDevices()
+            .then(devices => {
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                console.log(`Dispositivos de video detectados: ${videoDevices.length}`);
+                
+                if (videoDevices.length === 0) {
+                    console.warn("⚠️ No se detectaron cámaras en el dispositivo");
+                }
+                
+                videoDevices.forEach((device, index) => {
+                    console.log(`Cámara ${index + 1}: ${device.label || 'Etiqueta no disponible (requiere permiso)'}`);
+                });
+            })
+            .catch(error => {
+                console.error(`Error enumerando dispositivos: ${error}`);
+            });
+    }
+    
+    // Comprobar estado actual del stream
+    console.log(`Stream de cámara activo: ${stream !== null && stream !== undefined}`);
+    if (stream) {
+        const videoTracks = stream.getVideoTracks();
+        console.log(`Tracks de video activos: ${videoTracks.length}`);
+        
+        videoTracks.forEach((track, index) => {
+            console.log(`Track ${index + 1}: ${track.label}, Estado: ${track.readyState}`);
+            console.log(`  Activo: ${track.enabled}, Muted: ${track.muted}`);
+            
+            // Mostrar restricciones
+            const capabilities = track.getCapabilities ? track.getCapabilities() : 'No soportado';
+            console.log(`  Capacidades: ${JSON.stringify(capabilities)}`);
+        });
+    }
+    
+    // Comprobar estado del elemento de video
+    if (cameraVideo) {
+        console.log("Estado del elemento video:");
+        console.log(`- readyState: ${cameraVideo.readyState}`);
+        console.log(`- videoWidth/videoHeight: ${cameraVideo.videoWidth}x${cameraVideo.videoHeight}`);
+        console.log(`- srcObject establecido: ${!!cameraVideo.srcObject}`);
+        console.log(`- autoplay: ${cameraVideo.autoplay}`);
+        console.log(`- playsinline: ${cameraVideo.hasAttribute('playsinline')}`);
+    }
+    
+    console.log("=== FIN DEL DIAGNÓSTICO ===");
+    
+    // Crear un botón para mostrar la información en la UI para el usuario
+    const diagnosticsBtn = document.createElement('button');
+    diagnosticsBtn.textContent = 'Ver Info Diagnóstico';
+    diagnosticsBtn.className = 'btn btn-outline-info btn-sm mt-2';
+    diagnosticsBtn.style.display = 'block';
+    diagnosticsBtn.onclick = function() {
+        // Crear y mostrar un modal con la información
+        const modal = document.createElement('div');
+        modal.style.position = 'fixed';
+        modal.style.left = '0';
+        modal.style.top = '0';
+        modal.style.width = '100%';
+        modal.style.height = '100%';
+        modal.style.backgroundColor = 'rgba(0,0,0,0.7)';
+        modal.style.zIndex = '10000';
+        modal.style.display = 'flex';
+        modal.style.alignItems = 'center';
+        modal.style.justifyContent = 'center';
+        
+        const content = document.createElement('div');
+        content.style.backgroundColor = 'white';
+        content.style.padding = '20px';
+        content.style.borderRadius = '5px';
+        content.style.maxWidth = '80%';
+        content.style.maxHeight = '80%';
+        content.style.overflow = 'auto';
+        
+        let diagnosticHtml = '<h4>Diagnóstico de Cámara</h4>';
+        diagnosticHtml += `<p>Protocolo: ${window.location.protocol}</p>`;
+        diagnosticHtml += `<p>Soporte de cámara: ${hasGetUserMedia ? '✅' : '❌'}</p>`;
+        
+        if (!isSecure) {
+            diagnosticHtml += '<p style="color: red;">⚠️ La cámara requiere HTTPS excepto en localhost</p>';
+        }
+        
+        if (stream) {
+            const videoTracks = stream.getVideoTracks();
+            diagnosticHtml += `<p>Cámara activa: ✅ (${videoTracks.length} tracks)</p>`;
+            videoTracks.forEach((track, index) => {
+                diagnosticHtml += `<p>Cámara ${index + 1}: ${track.label}, Estado: ${track.readyState}</p>`;
+            });
+        } else {
+            diagnosticHtml += '<p>Cámara activa: ❌</p>';
+        }
+        
+        // Añadir botón para probar getUserMedia directamente
+        diagnosticHtml += '<button id="test-camera-btn" class="btn btn-primary btn-sm mt-2">Probar Cámara Directamente</button>';
+        diagnosticHtml += '<div id="test-result" class="mt-2"></div>';
+        
+        diagnosticHtml += '<hr><button id="close-modal-btn" class="btn btn-secondary">Cerrar</button>';
+        
+        content.innerHTML = diagnosticHtml;
+        modal.appendChild(content);
+        document.body.appendChild(modal);
+        
+        // Agregar evento al botón de cerrar
+        document.getElementById('close-modal-btn').addEventListener('click', () => {
+            document.body.removeChild(modal);
+        });
+        
+        // Agregar evento al botón de prueba
+        document.getElementById('test-camera-btn').addEventListener('click', () => {
+            const resultDiv = document.getElementById('test-result');
+            resultDiv.innerHTML = 'Probando cámara...';
+            
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(testStream => {
+                    const tracks = testStream.getVideoTracks();
+                    resultDiv.innerHTML = `<p style="color: green;">✅ Cámara accesible: ${tracks[0].label}</p>`;
+                    
+                    // Crear un video para mostrar la cámara dentro del modal
+                    const testVideo = document.createElement('video');
+                    testVideo.srcObject = testStream;
+                    testVideo.autoplay = true;
+                    testVideo.playsinline = true;
+                    testVideo.style.width = '100%';
+                    testVideo.style.maxHeight = '200px';
+                    testVideo.style.backgroundColor = 'black';
+                    resultDiv.appendChild(testVideo);
+                    
+                    // Botón para detener la prueba
+                    const stopBtn = document.createElement('button');
+                    stopBtn.textContent = 'Detener Prueba';
+                    stopBtn.className = 'btn btn-danger btn-sm mt-2';
+                    stopBtn.onclick = () => {
+                        testStream.getTracks().forEach(track => track.stop());
+                        resultDiv.innerHTML = 'Prueba finalizada.';
+                    };
+                    resultDiv.appendChild(stopBtn);
+                })
+                .catch(error => {
+                    resultDiv.innerHTML = `<p style="color: red;">❌ Error al acceder a la cámara: ${error.name} - ${error.message}</p>`;
+                });
+        });
+    };
+    
+    // Añadir botón a la UI
+    if (cameraContainer && cameraContainer.parentNode) {
+        cameraContainer.parentNode.appendChild(diagnosticsBtn);
+    }
+}
+
+// Ejecutar diagnóstico cuando se active la pestaña de cámara
+if (cameraTab) {
+    cameraTab.addEventListener('click', function() {
+        // Ejecutar diagnóstico después de inicializar la cámara
+        setTimeout(diagnoseCameraIssues, 1000);
+    });
+}
 </script>
 {% endblock %}
