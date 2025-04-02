@@ -1,0 +1,11 @@
+,precision,recall,f1-score,support
+dulcigomas,1.0,1.0,1.0,72.0
+gomitas_acidul,1.0,1.0,1.0,103.0
+gusanitos_saladino,1.0,1.0,1.0,92.0
+manchate,1.0,1.0,1.0,108.0
+oruga_gomitas,1.0,1.0,1.0,83.0
+osos_gomita_saladino,1.0,1.0,1.0,82.0
+panditas,1.0,1.0,1.0,89.0
+accuracy,1.0,1.0,1.0,1.0
+macro avg,1.0,1.0,1.0,629.0
+weighted avg,1.0,1.0,1.0,629.0

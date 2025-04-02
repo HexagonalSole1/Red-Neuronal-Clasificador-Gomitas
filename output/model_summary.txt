@@ -1,0 +1,9 @@
+Número de clases: 7
+Clases: dulcigomas, gomitas_acidul, gusanitos_saladino, manchate, oruga_gomitas, osos_gomita_saladino, panditas
+Tamaño de imagen: 224x224
+Épocas: 20
+Batch size: 32
+Learning rate: 0.001
+Número de folds: 5
+Precisión promedio: 1.0000
+Desviación estándar: 0.0000
