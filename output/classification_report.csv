@@ -1,11 +1,16 @@
 ,precision,recall,f1-score,support
 dulcigomas,1.0,1.0,1.0,72.0
+frutigomas_corazon_glype,1.0,1.0,1.0,81.0
+frutigomas_glype,1.0,1.0,1.0,67.0
+goma_azucarada_saladino,1.0,1.0,1.0,66.0
+goma_lombriz_neon,1.0,1.0,1.0,79.0
 gomitas_acidul,1.0,1.0,1.0,103.0
+gomitas_aros_manzana,1.0,1.0,1.0,73.0
 gusanitos_saladino,1.0,1.0,1.0,92.0
 manchate,1.0,1.0,1.0,108.0
 oruga_gomitas,1.0,1.0,1.0,83.0
 osos_gomita_saladino,1.0,1.0,1.0,82.0
 panditas,1.0,1.0,1.0,89.0
 accuracy,1.0,1.0,1.0,1.0
-macro avg,1.0,1.0,1.0,629.0
-weighted avg,1.0,1.0,1.0,629.0
+macro avg,1.0,1.0,1.0,995.0
+weighted avg,1.0,1.0,1.0,995.0

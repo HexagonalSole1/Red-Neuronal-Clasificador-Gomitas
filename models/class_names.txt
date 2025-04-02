@@ -1,5 +1,10 @@
 dulcigomas
+frutigomas_corazon_glype
+frutigomas_glype
+goma_azucarada_saladino
+goma_lombriz_neon
 gomitas_acidul
+gomitas_aros_manzana
 gusanitos_saladino
 manchate
 oruga_gomitas
