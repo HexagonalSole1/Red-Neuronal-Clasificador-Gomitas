@@ -43,6 +43,10 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Función para validar formulario de subida de imagen
+// Reemplaza la función validateImageForm que está causando la alerta en el archivo main.js
+// o añade este script a la sección extra_js de predict.html
+
+// Función para validar formulario de subida de imagen
 function validateImageForm() {
     const fileInput = document.getElementById('file');
     if (!fileInput) return true;
@@ -54,22 +58,43 @@ function validateImageForm() {
     
     const file = fileInput.files[0];
     
-    // Verificar tipo de archivo
-    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    if (!validTypes.includes(file.type)) {
-        alert('El archivo debe ser una imagen (JPEG, PNG o GIF)');
+    // Verificar tipo de archivo (incluir HEIC/HEIF)
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif'];
+    const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.heif'];
+    
+    // Verificar por tipo MIME o por extensión
+    const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+    if (!validTypes.includes(file.type) && !validExtensions.includes(fileExtension)) {
+        // En caso de HEIC, verificar específicamente por la extensión
+        if (file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
+            // Es un archivo HEIC/HEIF por extensión, permitirlo
+            return true;
+        }
+        
+        alert('El archivo debe ser una imagen (JPEG, PNG, GIF o HEIC)');
         return false;
     }
     
-    // Verificar tamaño (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-        alert('La imagen es demasiado grande. Máximo 10MB.');
+    // Verificar tamaño (max 20MB)
+    if (file.size > 20 * 1024 * 1024) {
+        alert('La imagen es demasiado grande. Máximo 20MB.');
         return false;
     }
     
     return true;
 }
 
+// Sustituir la función anterior por esta en el evento submit del formulario
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadForm = document.getElementById('upload-form');
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', function(e) {
+            if (!validateImageForm()) {
+                e.preventDefault();
+            }
+        });
+    }
+});
 // Asignar validación al formulario si existe
 const uploadForm = document.getElementById('upload-form');
 if (uploadForm) {

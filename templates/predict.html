@@ -38,10 +38,121 @@
         justify-content: center;
         cursor: pointer;
     }
+    #camera-container {
+        width: 100%;
+        max-width: 100%;
+        height: 300px;
+        border-radius: 8px;
+        overflow: hidden;
+        background-color: #000;
+        margin-bottom: 20px;
+        position: relative;
+        display: none;
+    }
+    #camera-video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    #camera-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background-color: rgba(0, 0, 0, 0.2);
+        color: white;
+    }
+    #camera-controls {
+        position: absolute;
+        bottom: 10px;
+        left: 0;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+    }
+    .camera-btn {
+        background-color: rgba(255, 255, 255, 0.3);
+        border: none;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .camera-btn:hover {
+        background-color: rgba(255, 255, 255, 0.5);
+    }
+    .camera-btn.capture {
+        background-color: #ff6b6b;
+    }
+    .camera-btn.capture:hover {
+        background-color: #ff5252;
+    }
+    .nav-tabs .nav-link.active {
+        border-bottom: 3px solid #ff6b6b;
+        font-weight: bold;
+    }
+    .tab-content {
+        padding-top: 20px;
+    }
+    #captured-image {
+        max-width: 100%;
+        max-height: 300px;
+        border-radius: 8px;
+    }
+    #capture-preview-container {
+        display: none;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    #loading-indicator {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        color: white;
+    }
+    .spinner {
+        width: 50px;
+        height: 50px;
+        border: 5px solid #f3f3f3;
+        border-top: 5px solid #ff6b6b;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 15px;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
+<!-- Indicador de carga -->
+<div id="loading-indicator">
+    <div class="spinner"></div>
+    <p id="loading-message">Procesando imagen...</p>
+</div>
+
 <div class="row">
     <div class="col-lg-8 mx-auto">
         <div class="card">
@@ -51,27 +162,92 @@
                 </h5>
             </div>
             <div class="card-body">
-                <form method="POST" enctype="multipart/form-data" id="upload-form">
-                    <div class="mb-3">
-                        <label for="file" class="form-label">Selecciona o arrastra una imagen:</label>
-                        <div id="preview-container">
-                            <div id="drop-zone">
-                                <i class="fas fa-cloud-upload-alt upload-icon"></i>
-                                <p class="upload-text">Arrastra una imagen aquí o haz clic para seleccionar</p>
-                                <img id="image-preview" src="#" alt="Vista previa de la imagen">
+                <!-- Pestañas para seleccionar método de entrada -->
+                <ul class="nav nav-tabs" id="imageTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="upload-tab" data-bs-toggle="tab" data-bs-target="#upload-content" type="button" role="tab" aria-controls="upload-content" aria-selected="true">
+                            <i class="fas fa-upload me-2"></i>Subir imagen
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="camera-tab" data-bs-toggle="tab" data-bs-target="#camera-content" type="button" role="tab" aria-controls="camera-content" aria-selected="false">
+                            <i class="fas fa-video me-2"></i>Usar cámara
+                        </button>
+                    </li>
+                </ul>
+                
+                <div class="tab-content" id="imageTabsContent">
+                    <!-- Contenido de la pestaña de subir imagen -->
+                    <div class="tab-pane fade show active" id="upload-content" role="tabpanel" aria-labelledby="upload-tab">
+                        <form method="POST" enctype="multipart/form-data" id="upload-form">
+                            <div class="mb-3">
+                                <label for="file" class="form-label">Selecciona o arrastra una imagen:</label>
+                                <div id="preview-container">
+                                    <div id="drop-zone">
+                                        <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                                        <p class="upload-text">Arrastra una imagen aquí o haz clic para seleccionar</p>
+                                        <img id="image-preview" src="#" alt="Vista previa de la imagen">
+                                    </div>
+                                </div>
+                                <input class="form-control" type="file" name="file" id="file" accept="image/*,.heic,.HEIC" required>
+                                <small class="text-muted">Formatos soportados: JPG, PNG, GIF, HEIC</small>
+                            </div>
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary" id="submit-upload-btn">
+                                    <i class="fas fa-search me-2"></i>Clasificar Imagen
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- Contenido de la pestaña de cámara -->
+                    <div class="tab-pane fade" id="camera-content" role="tabpanel" aria-labelledby="camera-tab">
+                        <div class="mb-3">
+                            <div id="camera-container">
+                                <video id="camera-video" autoplay playsinline></video>
+                                <div id="camera-overlay">
+                                    <div id="camera-message">Permitir acceso a la cámara...</div>
+                                    <div id="camera-controls">
+                                        <button type="button" class="camera-btn capture" id="capture-btn">
+                                            <i class="fas fa-camera"></i>
+                                        </button>
+                                        <button type="button" class="camera-btn" id="switch-camera-btn" style="display: none;">
+                                            <i class="fas fa-sync-alt"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Canvas para capturar la imagen -->
+                            <canvas id="capture-canvas" style="display: none;"></canvas>
+                            
+                            <!-- Vista previa de la imagen capturada -->
+                            <div id="capture-preview-container">
+                                <img id="captured-image" alt="Imagen capturada" class="img-fluid rounded">
                             </div>
                         </div>
-                        <input class="form-control" type="file" name="file" id="file" accept="image/*" required>
+                        
+                        <form id="camera-form" method="POST" enctype="multipart/form-data">
+                            <input type="hidden" name="camera_image" id="camera-image-data">
+                            <div class="d-grid gap-2">
+                                <button type="button" class="btn btn-secondary mb-2" id="retake-btn" style="display: none;">
+                                    <i class="fas fa-redo me-2"></i>Tomar otra foto
+                                </button>
+                                <button type="submit" class="btn btn-primary" id="submit-camera-btn" style="display: none;">
+                                    <i class="fas fa-search me-2"></i>Clasificar Imagen
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary" id="submit-btn">
-                            <i class="fas fa-search me-2"></i>Clasificar Imagen
-                        </button>
-                        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
-                            <i class="fas fa-arrow-left me-2"></i>Volver
-                        </a>
-                    </div>
-                </form>
+                </div>
+                
+                <hr class="my-4">
+                
+                <div class="d-grid">
+                    <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Volver
+                    </a>
+                </div>
             </div>
         </div>
         
@@ -108,80 +284,361 @@
 
 {% block extra_js %}
 <script>
-    // Previsualización de imagen antes de subir
+    // Variables globales
+    let stream = null;
+    let cameraFacingMode = 'environment';
+    const loadingIndicator = document.getElementById('loading-indicator');
+    const loadingMessage = document.getElementById('loading-message');
+    
+    // Elementos DOM para la subida de archivos
+    const fileInput = document.getElementById('file');
+    const imagePreview = document.getElementById('image-preview');
+    const dropZone = document.getElementById('drop-zone');
+    const uploadIcon = document.querySelector('.upload-icon');
+    const uploadText = document.querySelector('.upload-text');
+    const previewContainer = document.getElementById('preview-container');
+    const uploadForm = document.getElementById('upload-form');
+    
+    // Elementos DOM para la cámara
+    const cameraTab = document.getElementById('camera-tab');
+    const cameraContainer = document.getElementById('camera-container');
+    const cameraVideo = document.getElementById('camera-video');
+    const captureBtn = document.getElementById('capture-btn');
+    const switchCameraBtn = document.getElementById('switch-camera-btn');
+    const retakeBtn = document.getElementById('retake-btn');
+    const submitCameraBtn = document.getElementById('submit-camera-btn');
+    const captureCanvas = document.getElementById('capture-canvas');
+    const capturedImage = document.getElementById('captured-image');
+    const capturePreviewContainer = document.getElementById('capture-preview-container');
+    const cameraImageData = document.getElementById('camera-image-data');
+    const cameraForm = document.getElementById('camera-form');
+    const cameraMessage = document.getElementById('camera-message');
+    
+    // Funciones de utilidad
+    function showLoading(message = 'Procesando imagen...') {
+        loadingMessage.textContent = message;
+        loadingIndicator.style.display = 'flex';
+    }
+    
+    function hideLoading() {
+        loadingIndicator.style.display = 'none';
+    }
+    
+    // Inicialización cuando el DOM está cargado
     document.addEventListener('DOMContentLoaded', function() {
-        const fileInput = document.getElementById('file');
-        const imagePreview = document.getElementById('image-preview');
-        const dropZone = document.getElementById('drop-zone');
-        const uploadIcon = document.querySelector('.upload-icon');
-        const uploadText = document.querySelector('.upload-text');
-        const previewContainer = document.getElementById('preview-container');
+        console.log("DOM cargado, inicializando funciones...");
         
-        // Mostrar vista previa al seleccionar archivo
+        // Manejo del formulario de subida
+        uploadForm.addEventListener('submit', function() {
+            showLoading('Enviando imagen...');
+            return true;
+        });
+        
+        // Previsualización de imagen al seleccionar archivo
         fileInput.addEventListener('change', function() {
-            showPreview(this.files[0]);
-        });
-        
-        // Configurar zona de arrastrar y soltar
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            previewContainer.addEventListener(eventName, preventDefaults, false);
-        });
-        
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-        
-        ['dragenter', 'dragover'].forEach(eventName => {
-            previewContainer.addEventListener(eventName, highlight, false);
-        });
-        
-        ['dragleave', 'drop'].forEach(eventName => {
-            previewContainer.addEventListener(eventName, unhighlight, false);
-        });
-        
-        function highlight() {
-            previewContainer.style.borderColor = '#007bff';
-            previewContainer.style.backgroundColor = '#e9f7fe';
-        }
-        
-        function unhighlight() {
-            previewContainer.style.borderColor = '#ccc';
-            previewContainer.style.backgroundColor = '#f8f9fa';
-        }
-        
-        previewContainer.addEventListener('drop', handleDrop, false);
-        
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
+            const file = this.files[0];
+            if (!file) return;
             
-            if (files.length) {
-                fileInput.files = files;
-                showPreview(files[0]);
-            }
-        }
-        
-        // Mostrar vista previa de la imagen
-        function showPreview(file) {
-            if (file && file.type.match('image.*')) {
+            // Para archivos HEIC mostramos un placeholder
+            if (file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
+                imagePreview.style.display = 'none';
+                uploadIcon.style.display = 'block';
+                uploadIcon.className = 'fas fa-file-image upload-icon';
+                uploadText.style.display = 'block';
+                uploadText.textContent = 'Imagen HEIC seleccionada. Se convertirá automáticamente.';
+            } else {
+                // Para otros formatos mostramos la vista previa
                 const reader = new FileReader();
-                
                 reader.onload = function(e) {
                     imagePreview.src = e.target.result;
                     imagePreview.style.display = 'block';
                     uploadIcon.style.display = 'none';
                     uploadText.style.display = 'none';
                 }
-                
                 reader.readAsDataURL(file);
             }
-        }
+        });
+        
+        // Configuración de drag & drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            previewContainer.addEventListener(eventName, function(e) { 
+                e.preventDefault(); 
+                e.stopPropagation(); 
+            }, false);
+        });
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            previewContainer.addEventListener(eventName, function() {
+                previewContainer.style.borderColor = '#007bff';
+                previewContainer.style.backgroundColor = '#e9f7fe';
+            }, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            previewContainer.addEventListener(eventName, function() {
+                previewContainer.style.borderColor = '#ccc';
+                previewContainer.style.backgroundColor = '#f8f9fa';
+            }, false);
+        });
+        
+        previewContainer.addEventListener('drop', function(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            if (files.length) {
+                const file = files[0];
+                fileInput.files = files;
+                
+                // Para archivos HEIC mostramos un placeholder
+                if (file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
+                    imagePreview.style.display = 'none';
+                    uploadIcon.style.display = 'block';
+                    uploadIcon.className = 'fas fa-file-image upload-icon';
+                    uploadText.style.display = 'block';
+                    uploadText.textContent = 'Imagen HEIC seleccionada. Se convertirá automáticamente.';
+                } else {
+                    // Para otros formatos mostramos la vista previa
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        imagePreview.src = e.target.result;
+                        imagePreview.style.display = 'block';
+                        uploadIcon.style.display = 'none';
+                        uploadText.style.display = 'none';
+                    }
+                    reader.readAsDataURL(file);
+                }
+            }
+        });
         
         // Hacer clic en la zona para seleccionar archivo
         dropZone.addEventListener('click', function() {
             fileInput.click();
         });
+        
+        // ===== FUNCIONES DE CÁMARA =====
+        
+        // Cuando se hace clic en la pestaña de cámara
+        cameraTab.addEventListener('click', function() {
+            console.log("Tab de cámara clickeado, inicializando cámara...");
+            setTimeout(initCamera, 100); // Pequeño retraso para asegurar que la pestaña esté visible
+        });
+        
+        captureBtn.addEventListener('click', captureImage);
+        retakeBtn.addEventListener('click', retakePhoto);
+        switchCameraBtn.addEventListener('click', switchCamera);
+        
+        // Capturar envío del formulario de cámara
+        cameraForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            if (!cameraImageData.value) {
+                alert('Por favor, toma una foto primero');
+                return;
+            }
+            
+            showLoading('Clasificando imagen...');
+            
+            // Crear FormData y añadir la imagen
+            const formData = new FormData();
+            
+            // Convertir imagen base64 a archivo
+            fetch(cameraImageData.value)
+                .then(res => res.blob())
+                .then(blob => {
+                    const file = new File([blob], "camera-capture.jpg", {type: "image/jpeg"});
+                    formData.append('file', file);
+                    
+                    // Enviar el formulario
+                    fetch('{{ url_for("web_predict") }}', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => {
+                        if (response.redirected) {
+                            window.location.href = response.url;
+                        } else {
+                            return response.text();
+                        }
+                    })
+                    .then(html => {
+                        hideLoading();
+                        if (html) {
+                            document.open();
+                            document.write(html);
+                            document.close();
+                        }
+                    })
+                    .catch(error => {
+                        hideLoading();
+                        console.error('Error enviando la imagen:', error);
+                        alert('Ocurrió un error al enviar la imagen. Por favor, inténtalo de nuevo.');
+                    });
+                });
+        });
     });
+    
+    // Inicializar la cámara
+    function initCamera() {
+        console.log("Inicializando cámara...");
+        // Mostrar el contenedor de la cámara
+        cameraContainer.style.display = 'block';
+        
+        // Si ya hay un stream activo, no hacer nada
+        if (stream) {
+            console.log("Ya hay un stream activo");
+            return;
+        }
+        
+        // Verificar soporte del navegador
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            console.error("Este navegador no soporta la API mediaDevices");
+            cameraMessage.textContent = 'Tu navegador no soporta acceso a la cámara';
+            return;
+        }
+        
+        // Acceder a la cámara
+        console.log("Solicitando permisos de cámara...");
+        navigator.mediaDevices.getUserMedia({
+            video: { 
+                facingMode: cameraFacingMode,
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            },
+            audio: false
+        })
+        .then(function(videoStream) {
+            console.log("Permiso de cámara concedido");
+            stream = videoStream;
+            cameraVideo.srcObject = stream;
+            
+            // Evento cuando el video está listo para reproducirse
+            cameraVideo.onloadedmetadata = function() {
+                console.log("Video metadata cargada, reproduciendo...");
+                cameraVideo.play();
+                cameraMessage.textContent = 'Enfoca la gomita y toma la foto';
+            };
+            
+            // Verificar si hay múltiples cámaras
+            navigator.mediaDevices.enumerateDevices()
+                .then(devices => {
+                    const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                    console.log(`Dispositivos de video detectados: ${videoDevices.length}`);
+                    if (videoDevices.length > 1) {
+                        switchCameraBtn.style.display = 'block';
+                    }
+                });
+        })
+        .catch(function(error) {
+            console.error('Error accediendo a la cámara: ', error);
+            if (error.name === 'NotAllowedError') {
+                cameraMessage.textContent = 'Permiso de cámara denegado';
+            } else {
+                cameraMessage.textContent = 'Error al acceder a la cámara: ' + error.message;
+            }
+        });
+    }
+    
+    // Capturar imagen de la cámara
+    function captureImage() {
+        console.log("Capturando imagen...");
+        if (!stream) {
+            console.error("No hay stream de cámara activo");
+            return;
+        }
+        
+        const videoWidth = cameraVideo.videoWidth;
+        const videoHeight = cameraVideo.videoHeight;
+        
+        console.log(`Dimensiones del video: ${videoWidth}x${videoHeight}`);
+        
+        // Configurar canvas con el tamaño del video
+        captureCanvas.width = videoWidth;
+        captureCanvas.height = videoHeight;
+        
+        // Dibujar el frame actual en el canvas
+        const context = captureCanvas.getContext('2d');
+        context.drawImage(cameraVideo, 0, 0, videoWidth, videoHeight);
+        
+        // Convertir canvas a imagen data URL
+        const imageDataUrl = captureCanvas.toDataURL('image/jpeg', 0.9);
+        
+        // Mostrar imagen capturada
+        capturedImage.src = imageDataUrl;
+        capturePreviewContainer.style.display = 'block';
+        cameraContainer.style.display = 'none';
+        
+        // Guardar data URL en input hidden
+        cameraImageData.value = imageDataUrl;
+        
+        // Mostrar botones de control
+        retakeBtn.style.display = 'block';
+        submitCameraBtn.style.display = 'block';
+        
+        console.log("Imagen capturada correctamente");
+    }
+    
+    // Volver a tomar la foto
+    function retakePhoto() {
+        console.log("Volviendo a tomar foto...");
+        capturePreviewContainer.style.display = 'none';
+        cameraContainer.style.display = 'block';
+        retakeBtn.style.display = 'none';
+        submitCameraBtn.style.display = 'none';
+        cameraImageData.value = '';
+    }
+    
+    // Cambiar entre cámara frontal y trasera
+    function switchCamera() {
+        console.log("Cambiando de cámara...");
+        if (!stream) return;
+        
+        // Detener el stream actual
+        stream.getTracks().forEach(track => {
+            track.stop();
+            console.log("Track detenido:", track.label);
+        });
+        stream = null;
+        
+        // Cambiar modo de cámara
+        cameraFacingMode = cameraFacingMode === 'environment' ? 'user' : 'environment';
+        console.log(`Nuevo modo de cámara: ${cameraFacingMode}`);
+        
+        // Reiniciar cámara con nuevo modo
+        navigator.mediaDevices.getUserMedia({
+            video: { 
+                facingMode: cameraFacingMode,
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            },
+            audio: false
+        })
+        .then(function(videoStream) {
+            stream = videoStream;
+            cameraVideo.srcObject = stream;
+            console.log("Cámara cambiada correctamente");
+        })
+        .catch(function(error) {
+            console.error('Error cambiando cámara: ', error);
+            cameraMessage.textContent = 'Error al cambiar de cámara';
+        });
+    }
+    
+    // Limpiar recursos al cambiar de pestaña
+    function cleanupCamera() {
+        console.log("Limpiando recursos de cámara...");
+        if (stream) {
+            stream.getTracks().forEach(track => {
+                track.stop();
+                console.log("Track detenido en cleanup:", track.label);
+            });
+            stream = null;
+        }
+    }
+    
+    // Limpiar cuando se cambia a la pestaña de subida
+    document.querySelector('button[data-bs-target="#upload-content"]').addEventListener('click', cleanupCamera);
+    
+    // Limpiar al salir de la página
+    window.addEventListener('beforeunload', cleanupCamera);
 </script>
 {% endblock %}

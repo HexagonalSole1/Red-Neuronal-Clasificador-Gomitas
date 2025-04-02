@@ -233,6 +233,9 @@ def index():
     model_info = get_model_info()
     return render_template('index.html', info=model_info)
 
+# Actualiza la lista de extensiones permitidas en controller.py
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'heic', 'heif'}
+
 @app.route('/predict', methods=['GET', 'POST'])
 def web_predict():
     """Página para realizar predicciones desde la web"""
@@ -258,6 +261,55 @@ def web_predict():
                 if not load_model_if_needed():
                     flash('Error al cargar el modelo')
                     return redirect(request.url)
+                
+                # Verificamos si es un archivo HEIC para convertirlo
+                is_heic = filepath.lower().endswith(('.heic', '.heif'))
+                
+                if is_heic:
+                    try:
+                        # Intentamos importar pillow_heif
+                        try:
+                            import pillow_heif
+                            pillow_heif.register_heif_opener()
+                            
+                            # Al registrar el opener, PIL puede abrir archivos HEIC directamente
+                            img = Image.open(filepath).convert('RGB')
+                            
+                            # También guardamos una versión JPG por compatibilidad
+                            jpg_filepath = os.path.splitext(filepath)[0] + ".jpg"
+                            img.save(jpg_filepath, "JPEG")
+                            filepath = jpg_filepath  # Usamos el JPG para el resto del proceso
+                            
+                        except ImportError:
+                            # Si no está disponible pillow_heif, intentamos con pyheif
+                            try:
+                                import pyheif
+                                
+                                # Abrimos el archivo HEIC
+                                heif_file = pyheif.read(filepath)
+                                
+                                # Convertimos a PIL Image
+                                img = Image.frombytes(
+                                    heif_file.mode, 
+                                    heif_file.size, 
+                                    heif_file.data,
+                                    "raw", 
+                                    heif_file.mode, 
+                                    heif_file.stride,
+                                )
+                                
+                                # Guardamos como JPG
+                                jpg_filepath = os.path.splitext(filepath)[0] + ".jpg"
+                                img.save(jpg_filepath, "JPEG")
+                                filepath = jpg_filepath  # Usamos el JPG para el resto del proceso
+                                
+                            except ImportError:
+                                # Si ninguna librería está disponible
+                                flash('No se pudo procesar la imagen HEIC. Faltan dependencias.')
+                                return redirect(request.url)
+                    except Exception as e:
+                        flash(f'Error al convertir imagen HEIC: {str(e)}')
+                        return redirect(request.url)
                 
                 # Abrimos y procesamos la imagen
                 img = Image.open(filepath).convert('RGB')
@@ -288,9 +340,12 @@ def web_predict():
                 uploads_dir = os.path.join('static', 'uploads')
                 os.makedirs(uploads_dir, exist_ok=True)
                 
+                # Si la imagen es HEIC, usamos la versión JPG convertida
+                display_filename = os.path.basename(filepath)
+                
                 # Guardamos la imagen para mostrarla en la página de resultados
-                display_path = f"uploads/{filename}"
-                save_path = os.path.join('static', 'uploads', filename)
+                display_path = f"uploads/{display_filename}"
+                save_path = os.path.join('static', 'uploads', display_filename)
                 img.save(save_path)
                 
                 return render_template('result.html', 
