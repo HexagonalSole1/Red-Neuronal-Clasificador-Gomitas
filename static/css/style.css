@@ -1,0 +1,121 @@
+
+/* Estilos generales */
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+main {
+    flex: 1 0 auto;
+}
+
+/* Ajustes para la barra de navegación */
+.navbar-brand {
+    font-weight: bold;
+}
+
+/* Estilos para tarjetas */
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+    font-weight: bold;
+}
+
+/* Clases en la página de inicio */
+.class-item {
+    transition: all 0.2s ease;
+}
+
+.class-item:hover {
+    background-color: #f8f9fa;
+    transform: translateY(-3px);
+}
+
+/* Estilos para la predicción */
+.result-info {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Estilo para el área de drag & drop */
+#preview-container:hover {
+    border-color: #007bff;
+}
+
+/* Mejoras para móviles */
+@media (max-width: 768px) {
+    .display-4 {
+        font-size: 2.5rem;
+    }
+    
+    .display-6 {
+        font-size: 1.5rem;
+    }
+    
+    h2 {
+        font-size: 1.75rem;
+    }
+}
+
+/* Personalización de colores para gomitas */
+.btn-primary {
+    background-color: #ff6b6b;
+    border-color: #ff6b6b;
+}
+
+.btn-primary:hover, .btn-primary:focus, .btn-primary:active {
+    background-color: #ff5252 !important;
+    border-color: #ff5252 !important;
+}
+
+.bg-primary {
+    background-color: #ff6b6b !important;
+}
+
+.text-primary {
+    color: #ff6b6b !important;
+}
+
+.btn-outline-secondary:hover {
+    background-color: #6c757d;
+    color: white;
+}
+
+/* Animaciones */
+.fa-candy-cane {
+    animation: wiggle 3s ease-in-out infinite;
+}
+
+@keyframes wiggle {
+    0%, 100% { transform: rotate(-3deg); }
+    50% { transform: rotate(3deg); }
+}
+
+/* Estilo para la página de resultado */
+.progress {
+    border-radius: 0.5rem;
+}
+
+.progress-bar {
+    transition: width 1.5s ease-in-out;
+}
+
+/* Personalización para enlaces */
+a {
+    transition: all 0.2s ease;
+}
+
+/* Ajustes para listas */
+.list-group-item i {
+    width: 20px;
+    text-align: center;
+}

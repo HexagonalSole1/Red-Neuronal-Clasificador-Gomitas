@@ -1,0 +1,78 @@
+{% extends "layout.html" %}
+
+{% block title %}Inicio - Clasificador de Gomitas{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto text-center mb-4">
+        <h1 class="display-4">Clasificador de Gomitas</h1>
+        <p class="lead">Reconocimiento de diferentes tipos de gomitas mediante Inteligencia Artificial</p>
+        <hr class="my-4">
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0"><i class="fas fa-info-circle me-2"></i>Sobre el Proyecto</h5>
+            </div>
+            <div class="card-body">
+                <p>Este sistema utiliza un modelo de red neuronal convolucional para clasificar imágenes de gomitas y otros dulces similares.</p>
+                <p>El modelo ha sido entrenado con múltiples variedades de gomitas y puede identificar diferentes tipos con alta precisión.</p>
+                <hr>
+                <h6>Información del Modelo:</h6>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">Número de clases: <strong>{{ info.num_classes }}</strong></li>
+                    <li class="list-group-item">Tamaño de imagen: <strong>{{ info.image_size }}</strong></li>
+                    {% if info.summary %}
+                        <li class="list-group-item">Precisión: <strong>{{ info.summary.get('Precisión promedio', 'N/A') }}</strong></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-success text-white">
+                <h5 class="card-title mb-0"><i class="fas fa-rocket me-2"></i>Comenzar</h5>
+            </div>
+            <div class="card-body d-flex flex-column">
+                <p>¡Prueba el clasificador ahora mismo subiendo una imagen de gomitas!</p>
+                <p>El sistema analizará la imagen y te dirá qué tipo de gomita aparece en la foto con un porcentaje de confianza.</p>
+                <p>También puedes explorar todas las clases de gomitas que el sistema puede identificar.</p>
+                <div class="mt-auto">
+                    <a href="{{ url_for('web_predict') }}" class="btn btn-primary btn-lg w-100 mb-2">
+                        <i class="fas fa-camera me-2"></i>Clasificar Imagen
+                    </a>
+                    <a href="{{ url_for('web_classes') }}" class="btn btn-outline-secondary btn-lg w-100">
+                        <i class="fas fa-th-list me-2"></i>Ver Clases Disponibles
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0"><i class="fas fa-database me-2"></i>Clases Disponibles</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for class_name in info.classes %}
+                        <div class="col-md-3 col-sm-4 col-6 mb-3">
+                            <div class="class-item text-center p-2 border rounded">
+                                <i class="fas fa-candy-cane mb-2" style="font-size: 24px; color: #fd7e14;"></i>
+                                <div>{{ class_name | replace('_', ' ') }}</div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

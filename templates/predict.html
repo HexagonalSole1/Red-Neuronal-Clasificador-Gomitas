@@ -1,0 +1,187 @@
+{% extends "layout.html" %}
+
+{% block title %}Clasificar Imagen - Clasificador de Gomitas{% endblock %}
+
+{% block extra_css %}
+<style>
+    #preview-container {
+        max-width: 100%;
+        height: 300px;
+        border: 2px dashed #ccc;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        background-color: #f8f9fa;
+        margin-bottom: 20px;
+    }
+    #image-preview {
+        max-width: 100%;
+        max-height: 100%;
+        display: none;
+    }
+    .upload-icon {
+        font-size: 5rem;
+        color: #adb5bd;
+    }
+    .upload-text {
+        margin-top: 10px;
+        color: #6c757d;
+    }
+    #drop-zone {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-camera me-2"></i>Clasificar una imagen de gomitas
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" id="upload-form">
+                    <div class="mb-3">
+                        <label for="file" class="form-label">Selecciona o arrastra una imagen:</label>
+                        <div id="preview-container">
+                            <div id="drop-zone">
+                                <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                                <p class="upload-text">Arrastra una imagen aquí o haz clic para seleccionar</p>
+                                <img id="image-preview" src="#" alt="Vista previa de la imagen">
+                            </div>
+                        </div>
+                        <input class="form-control" type="file" name="file" id="file" accept="image/*" required>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary" id="submit-btn">
+                            <i class="fas fa-search me-2"></i>Clasificar Imagen
+                        </button>
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Volver
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>Consejos para mejores resultados
+                </h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        Usa buena iluminación para que la imagen sea clara
+                    </li>
+                    <li class="list-group-item">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        Centra la gomita en la imagen y evita fondos complejos
+                    </li>
+                    <li class="list-group-item">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        Toma la foto desde arriba para mostrar la forma completa
+                    </li>
+                    <li class="list-group-item">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        Evita sombras o reflejos que puedan afectar los colores
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Previsualización de imagen antes de subir
+    document.addEventListener('DOMContentLoaded', function() {
+        const fileInput = document.getElementById('file');
+        const imagePreview = document.getElementById('image-preview');
+        const dropZone = document.getElementById('drop-zone');
+        const uploadIcon = document.querySelector('.upload-icon');
+        const uploadText = document.querySelector('.upload-text');
+        const previewContainer = document.getElementById('preview-container');
+        
+        // Mostrar vista previa al seleccionar archivo
+        fileInput.addEventListener('change', function() {
+            showPreview(this.files[0]);
+        });
+        
+        // Configurar zona de arrastrar y soltar
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            previewContainer.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            previewContainer.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            previewContainer.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight() {
+            previewContainer.style.borderColor = '#007bff';
+            previewContainer.style.backgroundColor = '#e9f7fe';
+        }
+        
+        function unhighlight() {
+            previewContainer.style.borderColor = '#ccc';
+            previewContainer.style.backgroundColor = '#f8f9fa';
+        }
+        
+        previewContainer.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            if (files.length) {
+                fileInput.files = files;
+                showPreview(files[0]);
+            }
+        }
+        
+        // Mostrar vista previa de la imagen
+        function showPreview(file) {
+            if (file && file.type.match('image.*')) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                    uploadIcon.style.display = 'none';
+                    uploadText.style.display = 'none';
+                }
+                
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        // Hacer clic en la zona para seleccionar archivo
+        dropZone.addEventListener('click', function() {
+            fileInput.click();
+        });
+    });
+</script>
+{% endblock %}

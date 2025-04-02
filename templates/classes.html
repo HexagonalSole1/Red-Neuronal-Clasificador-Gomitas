@@ -1,0 +1,67 @@
+{% extends "layout.html" %}
+
+{% block title %}Clases - Clasificador de Gomitas{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-th-list me-2"></i>Clases disponibles
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="lead">
+                    El modelo está entrenado para reconocer los siguientes tipos de gomitas:
+                </p>
+                
+                <div class="row">
+                    {% for class_name in classes %}
+                    <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-light">
+                                <h6 class="card-title mb-0">{{ class_name | replace('_', ' ') }}</h6>
+                            </div>
+                            <div class="card-body text-center">
+                                {% if class_name in examples %}
+                                    <img src="{{ url_for('static', filename='img/examples/' + class_name + '.jpg') }}" alt="{{ class_name }}" class="img-fluid rounded mb-2" style="max-height: 150px;">
+                                {% else %}
+                                    <div class="no-image-placeholder d-flex align-items-center justify-content-center" style="height: 150px; background-color: #f8f9fa;">
+                                        <i class="fas fa-candy-cane" style="font-size: 4rem; color: #fd7e14;"></i>
+                                    </div>
+                                {% endif %}
+                                <p class="card-text small">
+                                    <i class="fas fa-tag me-1 text-secondary"></i>{{ class_name }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-plus-circle me-2"></i>¿Necesitas añadir una nueva clase?
+                </h5>
+            </div>
+            <div class="card-body">
+                <p>Si deseas entrenar el modelo para reconocer un nuevo tipo de gomitas, sigue estos pasos:</p>
+                <ol>
+                    <li>Crea una carpeta con al menos 20 imágenes del nuevo tipo de gomitas</li>
+                    <li>Ejecuta el comando <code>python add_class.py ruta_a_tu_carpeta</code></li>
+                    <li>Vuelve a entrenar el modelo con <code>python main.py</code></li>
+                </ol>
+                <p>Una vez completado, el modelo podrá reconocer la nueva clase automáticamente.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

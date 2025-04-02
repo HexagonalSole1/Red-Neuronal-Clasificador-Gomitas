@@ -1,0 +1,131 @@
+{% extends "layout.html" %}
+
+{% block title %}Acerca de - Clasificador de Gomitas{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-10 mx-auto">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Acerca del Proyecto
+                </h5>
+            </div>
+            <div class="card-body">
+                <h2 class="display-6 mb-4">Clasificador de Gomitas</h2>
+                <p class="lead">
+                    Proyecto para la clasificación automática de gomitas y dulces similares mediante técnicas
+                    de aprendizaje profundo y redes neuronales convolucionales.
+                </p>
+                
+                <hr class="my-4">
+                
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <h4><i class="fas fa-cogs me-2 text-primary"></i>Tecnologías utilizadas</h4>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item">
+                                <i class="fab fa-python me-2 text-info"></i>Python como lenguaje principal
+                            </li>
+                            <li class="list-group-item">
+                                <i class="fas fa-brain me-2 text-danger"></i>TensorFlow para el entrenamiento del modelo
+                            </li>
+                            <li class="list-group-item">
+                                <i class="fas fa-chart-line me-2 text-success"></i>Keras para la construcción de la red neuronal
+                            </li>
+                            <li class="list-group-item">
+                                <i class="fas fa-flask me-2 text-warning"></i>Flask para la API y la interfaz web
+                            </li>
+                            <li class="list-group-item">
+                                <i class="fab fa-bootstrap me-2 text-primary"></i>Bootstrap para el diseño responsive
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div class="col-md-6 mb-4">
+                        <h4><i class="fas fa-lightbulb me-2 text-warning"></i>Características principales</h4>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item">
+                                <i class="fas fa-check-circle me-2 text-success"></i>Clasificación de múltiples tipos de gomitas
+                            </li>
+                            <li class="list-group-item">
+                                <i class="fas fa-check-circle me-2 text-success"></i>API REST para integración con aplicaciones móviles
+                            </li>
+                            <li class="list-group-item">
+                                <i class="fas fa-check-circle me-2 text-success"></i>Interfaz web amigable
+                            </li>
+                            <li class="list-group-item">
+                                <i class="fas fa-check-circle me-2 text-success"></i>Soporte para añadir nuevas clases
+                            </li>
+                            <li class="list-group-item">
+                                <i class="fas fa-check-circle me-2 text-success"></i>Validación cruzada para mayor precisión
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <hr class="my-4">
+                
+                <h4><i class="fas fa-code me-2 text-danger"></i>Estructura del proyecto</h4>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Archivo/Directorio</th>
+                                <th>Descripción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>main.py</code></td>
+                                <td>Script principal para entrenamiento del modelo</td>
+                            </tr>
+                            <tr>
+                                <td><code>predict.py</code></td>
+                                <td>Script para hacer predicciones individuales</td>
+                            </tr>
+                            <tr>
+                                <td><code>add_class.py</code></td>
+                                <td>Herramienta para añadir nuevas clases al modelo</td>
+                            </tr>
+                            <tr>
+                                <td><code>controller.py</code></td>
+                                <td>API REST y servidor web</td>
+                            </tr>
+                            <tr>
+                                <td><code>app.py</code></td>
+                                <td>Punto de entrada para la aplicación</td>
+                            </tr>
+                            <tr>
+                                <td><code>data/</code></td>
+                                <td>Directorio con imágenes para entrenamiento y pruebas</td>
+                            </tr>
+                            <tr>
+                                <td><code>models/</code></td>
+                                <td>Modelos entrenados y archivos de metadatos</td>
+                            </tr>
+                            <tr>
+                                <td><code>utils/</code></td>
+                                <td>Funciones de utilidad y herramientas</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <hr class="my-4">
+                
+                <h4><i class="fas fa-users me-2 text-info"></i>Cómo contribuir</h4>
+                <p>
+                    ¡Las contribuciones son bienvenidas! Puedes ayudar al proyecto de varias formas:
+                </p>
+                <ul>
+                    <li>Enviando imágenes nuevas para mejorar el entrenamiento</li>
+                    <li>Reportando errores o problemas</li>
+                    <li>Sugiriendo mejoras o nuevas características</li>
+                    <li>Compartiendo el proyecto con otros interesados</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
