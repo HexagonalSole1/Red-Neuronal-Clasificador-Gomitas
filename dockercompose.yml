@@ -1,0 +1,15 @@
+version: '3'
+
+services:
+  gomitas-classifier:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./models:/app/models
+      - ./data:/app/data
+      - ./output:/app/output
+      - ./static/uploads:/app/static/uploads
+    restart: unless-stopped
+    environment:
+      - SECRET_KEY=your_secure_secret_key_here
