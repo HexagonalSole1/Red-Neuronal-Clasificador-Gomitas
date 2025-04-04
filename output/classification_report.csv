@@ -1,16 +1,17 @@
 ,precision,recall,f1-score,support
-dulcigomas,1.0,1.0,1.0,72.0
-frutigomas_corazon_glype,1.0,1.0,1.0,81.0
-frutigomas_glype,1.0,1.0,1.0,67.0
-goma_azucarada_saladino,1.0,1.0,1.0,66.0
-goma_lombriz_neon,1.0,1.0,1.0,79.0
-gomitas_acidul,1.0,1.0,1.0,103.0
-gomitas_aros_manzana,1.0,1.0,1.0,73.0
-gusanitos_saladino,1.0,1.0,1.0,92.0
-manchate,1.0,1.0,1.0,108.0
-oruga_gomitas,1.0,1.0,1.0,83.0
-osos_gomita_saladino,1.0,1.0,1.0,82.0
-panditas,1.0,1.0,1.0,89.0
-accuracy,1.0,1.0,1.0,1.0
-macro avg,1.0,1.0,1.0,995.0
-weighted avg,1.0,1.0,1.0,995.0
+aros_durazno_gomita,1.0,1.0,1.0,112.0
+aros_manzana_gomita,1.0,1.0,1.0,98.0
+corazon_gomita,1.0,1.0,1.0,106.0
+dulcigoma_roja,0.983739837398374,1.0,0.9918032786885246,121.0
+dulcigoma_verde,1.0,1.0,1.0,76.0
+fresa_gomita,1.0,1.0,1.0,107.0
+gusano_fake,1.0,0.9880952380952381,0.9940119760479041,84.0
+gusano_rojo_amarillo_gomita,1.0,1.0,1.0,107.0
+gusano_verde_gomita,1.0,1.0,1.0,98.0
+pandita_amarillo,0.992,1.0,0.9959839357429718,124.0
+pandita_rojo_gomita,1.0,0.9882352941176471,0.9940828402366864,85.0
+piña_gomita,1.0,1.0,1.0,77.0
+uva_gomita,1.0,0.9882352941176471,0.9940828402366864,85.0
+accuracy,0.99765625,0.99765625,0.99765625,0.99765625
+macro avg,0.9981338336460289,0.9972742943331178,0.9976896054579056,1280.0
+weighted avg,0.997687906504065,0.99765625,0.9976572606107037,1280.0
